@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Video Demo</title>
+</head>
+<body>
+    <h1>Gemini Video Demo</h1>
+    <input type="file" id="videoFile" accept="video/*">
+    <input type="text" id="prompt" placeholder="Enter prompt" style="width:300px">
+    <button id="runButton">Upload and Run</button>
+    <pre id="response"></pre>
+
+    <script>
+    document.getElementById('runButton').onclick = async () => {
+        const fileInput = document.getElementById('videoFile');
+        const prompt = document.getElementById('prompt').value;
+        if (!fileInput.files.length) {
+            alert('Please select a video file');
+            return;
+        }
+        const file = fileInput.files[0];
+        const urlResp = await fetch('/generate-url', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({file_name: file.name})
+        });
+        const {signed_url} = await urlResp.json();
+        await fetch(signed_url, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/octet-stream'},
+            body: file
+        });
+        const runResp = await fetch('/run', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({file_name: file.name, prompt})
+        });
+        const runData = await runResp.json();
+        document.getElementById('response').textContent = runData.answer;
+    };
+    </script>
+</body>
+</html>
